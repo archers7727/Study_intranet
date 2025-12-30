@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
             },
             _count: {
               select: {
-                enrollments: true,
+                students: true,
                 sessions: true
               }
             }
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
           cost: cls.cost,
           isActive: cls.isActive,
           mainTeacher: cls.mainTeacher,
-          studentCount: cls._count.enrollments,
+          studentCount: cls._count.students,
           sessionCount: cls._count.sessions,
           tags: cls.tags.map(t => t.tag)
         }))
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
             },
             _count: {
               select: {
-                enrollments: true,
+                students: true,
                 sessions: true
               }
             }
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
           cost: cls.cost,
           isActive: cls.isActive,
           mainTeacher: cls.mainTeacher,
-          studentCount: cls._count.enrollments,
+          studentCount: cls._count.students,
           sessionCount: cls._count.sessions,
           tags: cls.tags.map(t => t.tag)
         }))

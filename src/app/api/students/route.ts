@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            enrollments: true,
+            classEnrollments: true,
             attendances: true
           }
         }
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         managementStatus: student.managementStatus,
         parent: student.parent,
         tags: student.tags.map(t => t.tag),
-        classCount: student._count.enrollments,
+        classCount: student._count.classEnrollments,
         attendanceCount: student._count.attendances,
         createdAt: student.createdAt
       })),
