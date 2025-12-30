@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
   },
   {
     title: '세션 관리',
-    href: '/dashboard/sessions',
+    href: '/sessions',
     minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'],
   },
   {
