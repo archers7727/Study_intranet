@@ -53,7 +53,7 @@ export async function POST(
     // 트랜잭션으로 학생 상태 업데이트 + 로그 생성
     const result = await prisma.$transaction(async (tx) => {
       // 학생 상태 업데이트
-      const updatedStudent = await tx.students.update({
+      const updatedStudent = await tx.student.update({
         where: { id: studentId },
         data: {
           managementStatus: newStatus
@@ -69,7 +69,7 @@ export async function POST(
       })
 
       // 상태 변경 로그 생성
-      const statusLog = await tx.studentStatusLogs.create({
+      const statusLog = await tx.statusLog.create({
         data: {
           studentId,
           previousStatus: student.managementStatus,
