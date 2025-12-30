@@ -52,7 +52,7 @@ export async function GET(
             session: {
               select: {
                 id: true,
-                scheduledAt: true,
+                sessionDate: true,
                 class: {
                   select: {
                     name: true
@@ -157,7 +157,7 @@ export async function GET(
         id: a.id,
         status: a.status,
         notes: a.notes,
-        sessionDate: a.session.scheduledAt,
+        sessionDate: a.session.sessionDate,
         className: a.session.class.name,
         createdAt: a.createdAt
       })),

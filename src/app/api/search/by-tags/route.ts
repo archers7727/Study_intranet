@@ -284,7 +284,7 @@ export async function POST(request: NextRequest) {
             }
           },
           orderBy: {
-            scheduledAt: 'desc'
+            sessionDate: 'desc'
           }
         })
 
@@ -314,7 +314,7 @@ export async function POST(request: NextRequest) {
             }
           },
           orderBy: {
-            scheduledAt: 'desc'
+            sessionDate: 'desc'
           }
         })
 
