@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { RoleLevel } from '@prisma/client'
+import { RoleLevel } from '@/types'
 import { ApiResponse } from '@/types'
 
 export async function POST(request: NextRequest) {

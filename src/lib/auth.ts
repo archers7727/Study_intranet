@@ -1,4 +1,4 @@
-import { RoleLevel } from '@prisma/client'
+import { RoleLevel } from '@/types'
 import { createSupabaseServerClient } from './supabase/server'
 import { prisma } from './prisma'
 import { User } from '@/types'

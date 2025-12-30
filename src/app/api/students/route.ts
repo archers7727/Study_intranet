@@ -3,7 +3,7 @@ import { requireAuth, requireAnyRole } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
 import { RoleLevel } from '@/types'
 import { generateStudentCredentials, calculateGrade } from '@/lib/auth'
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseAdmin } from '@/lib/supabase/server'
 
 // GET /api/students - 학생 목록 조회
 export async function GET(request: NextRequest) {
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
     const { studentId, password } = generateStudentCredentials(name, phone, new Date(birthDate), gender)
 
     // Supabase 인증 사용자 생성
-    const supabase = createClient()
+    const supabase = createSupabaseAdmin()
     const email = `${studentId}@student.local`
 
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
         id: authData.user!.id,
         email,
         name,
-        roleLevel: RoleLevel.STUDENT
+        roleLevel: 'STUDENT'
       }
     })
 
