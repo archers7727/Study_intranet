@@ -62,7 +62,7 @@ export async function GET(
             }
           },
           orderBy: {
-            createdAt: 'desc'
+            checkedAt: 'desc'
           },
           take: 50
         },
@@ -159,7 +159,7 @@ export async function GET(
         notes: a.notes,
         sessionDate: a.session.sessionDate,
         className: a.session.class.name,
-        createdAt: a.createdAt
+        checkedAt: a.checkedAt
       })),
       assignments: student.submissions.map(s => ({
         id: s.id,
