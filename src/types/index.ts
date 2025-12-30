@@ -1,4 +1,5 @@
-import { RoleLevel } from '@prisma/client'
+// RoleLevel 타입 정의
+export type RoleLevel = 'ADMIN' | 'SENIOR_TEACHER' | 'TEACHER' | 'ASSISTANT' | 'STUDENT' | 'PARENT'
 
 // 사용자 타입
 export interface User {

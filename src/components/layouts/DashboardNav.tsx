@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { RoleLevel } from '@prisma/client'
+import { RoleLevel } from '@/types'
 import { User } from '@/types'
 
 interface NavItem {
