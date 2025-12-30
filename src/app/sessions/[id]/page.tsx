@@ -28,6 +28,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, Edit, Calendar, Clock, MapPin, Users, CheckCircle, File, FileText, Plus, Download, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -130,6 +132,12 @@ export default function SessionDetailPage() {
   const [availableMaterials, setAvailableMaterials] = useState<Material[]>([])
   const [selectedMaterialId, setSelectedMaterialId] = useState<string>('')
   const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false)
+  const [assignmentTitle, setAssignmentTitle] = useState('')
+  const [assignmentDescription, setAssignmentDescription] = useState('')
+  const [assignmentDueDate, setAssignmentDueDate] = useState('')
+  const [assignmentMaxScore, setAssignmentMaxScore] = useState('')
+  const [creatingAssignment, setCreatingAssignment] = useState(false)
 
   useEffect(() => {
     fetchSession()
@@ -251,6 +259,47 @@ export default function SessionDetailPage() {
     } catch (error) {
       console.error('Error removing material:', error)
       alert('자료 제거에 실패했습니다.')
+    }
+  }
+
+  const handleCreateAssignment = async () => {
+    if (!assignmentTitle || !assignmentDueDate) {
+      alert('과제명과 마감일은 필수입니다.')
+      return
+    }
+
+    setCreatingAssignment(true)
+    try {
+      const response = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          title: assignmentTitle,
+          description: assignmentDescription || null,
+          dueDate: assignmentDueDate,
+          maxScore: assignmentMaxScore ? parseInt(assignmentMaxScore) : null,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create assignment')
+      }
+
+      setAssignmentDialogOpen(false)
+      setAssignmentTitle('')
+      setAssignmentDescription('')
+      setAssignmentDueDate('')
+      setAssignmentMaxScore('')
+      await fetchSession()
+      alert('과제가 생성되었습니다.')
+    } catch (error) {
+      console.error('Error creating assignment:', error)
+      alert('과제 생성에 실패했습니다.')
+    } finally {
+      setCreatingAssignment(false)
     }
   }
 
@@ -604,38 +653,132 @@ export default function SessionDetailPage() {
       </Card>
 
       {/* 과제 목록 */}
-      {session.assignments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>과제 목록</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>과제 목록 ({session.assignments.length})</CardTitle>
+            <Dialog open={assignmentDialogOpen} onOpenChange={setAssignmentDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  과제 생성
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>과제 생성</DialogTitle>
+                  <DialogDescription>
+                    이 세션의 과제를 생성합니다.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">과제명 *</label>
+                    <Input
+                      placeholder="과제 제목을 입력하세요"
+                      value={assignmentTitle}
+                      onChange={(e) => setAssignmentTitle(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">설명</label>
+                    <Textarea
+                      placeholder="과제 설명을 입력하세요"
+                      value={assignmentDescription}
+                      onChange={(e) => setAssignmentDescription(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">마감일 *</label>
+                    <Input
+                      type="date"
+                      value={assignmentDueDate}
+                      onChange={(e) => setAssignmentDueDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">만점</label>
+                    <Input
+                      type="number"
+                      placeholder="예: 100"
+                      value={assignmentMaxScore}
+                      onChange={(e) => setAssignmentMaxScore(e.target.value)}
+                      min="0"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setAssignmentDialogOpen(false)}
+                      disabled={creatingAssignment}
+                      className="flex-1"
+                    >
+                      취소
+                    </Button>
+                    <Button
+                      onClick={handleCreateAssignment}
+                      disabled={creatingAssignment}
+                      className="flex-1"
+                    >
+                      {creatingAssignment ? '생성 중...' : '생성'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {session.assignments.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              생성된 과제가 없습니다.
+            </div>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>제목</TableHead>
                   <TableHead>마감일</TableHead>
+                  <TableHead>만점</TableHead>
                   <TableHead>제출</TableHead>
+                  <TableHead>작업</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {session.assignments.map((assignment) => (
-                  <TableRow key={assignment.id}>
+                  <TableRow
+                    key={assignment.id}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => router.push(`/assignments/${assignment.id}`)}
+                  >
                     <TableCell className="font-medium">{assignment.title}</TableCell>
                     <TableCell>
                       {format(new Date(assignment.dueDate), 'PPP', { locale: ko })}
                     </TableCell>
                     <TableCell>
+                      {assignment.maxScore ? `${assignment.maxScore}점` : '-'}
+                    </TableCell>
+                    <TableCell>
                       {assignment._count.submissions} /{' '}
                       {session.class.students.length}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/assignments/${assignment.id}`)}
+                      >
+                        상세
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

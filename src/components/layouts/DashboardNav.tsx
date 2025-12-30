@@ -33,6 +33,11 @@ const navItems: NavItem[] = [
     minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'],
   },
   {
+    title: '과제 관리',
+    href: '/assignments',
+    minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'],
+  },
+  {
     title: '학습 자료',
     href: '/materials',
     minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'],
