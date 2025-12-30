@@ -24,7 +24,7 @@ const navItems: NavItem[] = [
   },
   {
     title: '클래스 관리',
-    href: '/dashboard/classes',
+    href: '/classes',
     minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER'],
   },
   {
