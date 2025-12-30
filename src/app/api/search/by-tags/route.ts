@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
                 tag: true
               }
             },
-            uploadedBy: {
+            createdBy: {
               select: {
                 id: true,
                 name: true,
@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
                 tag: true
               }
             },
-            uploadedBy: {
+            createdBy: {
               select: {
                 id: true,
                 name: true,
