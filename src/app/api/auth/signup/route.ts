@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // users 테이블에 사용자 정보 저장 (트리거가 자동으로 생성하지만, 확실하게 하기 위해 직접 생성)
+    // users 테이블에 사용자 정보 저장 및 교사 프로필 생성
     try {
       const user = await prisma.user.create({
         data: {
@@ -53,6 +53,17 @@ export async function POST(request: NextRequest) {
           roleLevel,
         },
       })
+
+      // 교사 역할인 경우 Teacher 프로필 생성
+      if (['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'].includes(roleLevel)) {
+        await prisma.teacher.create({
+          data: {
+            userId: user.id,
+            name: user.name,
+            specialties: [], // 초기값은 빈 배열
+          },
+        })
+      }
 
       return NextResponse.json<ApiResponse>({
         success: true,
