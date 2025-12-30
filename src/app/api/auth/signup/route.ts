@@ -20,6 +20,21 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // 이미 존재하는 이메일인지 확인
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    })
+
+    if (existingUser) {
+      return NextResponse.json<ApiResponse>({
+        success: false,
+        error: {
+          code: 'DUPLICATE_EMAIL',
+          message: '이미 사용 중인 이메일입니다.',
+        },
+      }, { status: 400 })
+    }
+
     // Supabase Admin 클라이언트로 사용자 생성
     const supabaseAdmin = createSupabaseAdmin()
 
@@ -34,6 +49,17 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError || !authData.user) {
+      // 이미 존재하는 이메일일 경우
+      if (authError?.message?.includes('already been registered')) {
+        return NextResponse.json<ApiResponse>({
+          success: false,
+          error: {
+            code: 'DUPLICATE_EMAIL',
+            message: '이미 사용 중인 이메일입니다.',
+          },
+        }, { status: 400 })
+      }
+
       return NextResponse.json<ApiResponse>({
         success: false,
         error: {
@@ -43,42 +69,51 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // users 테이블에 사용자 정보 저장 및 교사 프로필 생성
+    // users 테이블에 사용자 정보 저장 및 교사 프로필 생성 (트랜잭션)
     try {
-      const user = await prisma.user.create({
-        data: {
-          id: authData.user.id,
-          email,
-          name,
-          roleLevel,
-        },
-      })
-
-      // 교사 역할인 경우 Teacher 프로필 생성
-      if (['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'].includes(roleLevel)) {
-        await prisma.teacher.create({
+      await prisma.$transaction(async (tx) => {
+        // User 생성
+        const user = await tx.user.create({
           data: {
-            userId: user.id,
-            name: user.name,
-            specialties: [], // 초기값은 빈 배열
+            id: authData.user.id,
+            email,
+            name,
+            roleLevel,
           },
         })
-      }
+
+        // 교사 역할인 경우 Teacher 프로필 생성
+        if (['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'].includes(roleLevel)) {
+          await tx.teacher.create({
+            data: {
+              userId: user.id,
+              name: user.name,
+              specialties: [], // 초기값은 빈 배열
+            },
+          })
+        }
+      })
 
       return NextResponse.json<ApiResponse>({
         success: true,
         data: {
           user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            roleLevel: user.roleLevel,
+            id: authData.user.id,
+            email,
+            name,
+            roleLevel,
           },
         },
       }, { status: 201 })
     } catch (prismaError: any) {
+      console.error('Prisma error:', prismaError)
+
       // users 테이블 생성 실패 시 Supabase 사용자 삭제
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      } catch (deleteError) {
+        console.error('Failed to delete auth user:', deleteError)
+      }
 
       return NextResponse.json<ApiResponse>({
         success: false,
