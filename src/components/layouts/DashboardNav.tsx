@@ -24,12 +24,22 @@ const navItems: NavItem[] = [
   },
   {
     title: '클래스 관리',
-    href: '/dashboard/classes',
+    href: '/classes',
     minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER'],
   },
   {
     title: '세션 관리',
-    href: '/dashboard/sessions',
+    href: '/sessions',
+    minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'],
+  },
+  {
+    title: '과제 관리',
+    href: '/assignments',
+    minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'],
+  },
+  {
+    title: '학습 자료',
+    href: '/materials',
     minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'],
   },
   {

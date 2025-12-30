@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (targetType === 'students') {
       if (logic === 'AND') {
         // 모든 태그를 포함하는 학생
-        const students = await prisma.students.findMany({
+        const students = await prisma.student.findMany({
           where: {
             AND: tagIds.map(tagId => ({
               tags: {
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         }))
       } else {
         // 하나라도 포함하는 학생
-        const students = await prisma.students.findMany({
+        const students = await prisma.student.findMany({
           where: {
             tags: {
               some: {
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (targetType === 'classes') {
       if (logic === 'AND') {
-        const classes = await prisma.classes.findMany({
+        const classes = await prisma.class.findMany({
           where: {
             AND: tagIds.map(tagId => ({
               tags: {
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
             },
             _count: {
               select: {
-                enrollments: true,
+                students: true,
                 sessions: true
               }
             }
@@ -158,12 +158,12 @@ export async function POST(request: NextRequest) {
           cost: cls.cost,
           isActive: cls.isActive,
           mainTeacher: cls.mainTeacher,
-          studentCount: cls._count.enrollments,
+          studentCount: cls._count.students,
           sessionCount: cls._count.sessions,
           tags: cls.tags.map(t => t.tag)
         }))
       } else {
-        const classes = await prisma.classes.findMany({
+        const classes = await prisma.class.findMany({
           where: {
             tags: {
               some: {
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
             },
             _count: {
               select: {
-                enrollments: true,
+                students: true,
                 sessions: true
               }
             }
@@ -201,14 +201,14 @@ export async function POST(request: NextRequest) {
           cost: cls.cost,
           isActive: cls.isActive,
           mainTeacher: cls.mainTeacher,
-          studentCount: cls._count.enrollments,
+          studentCount: cls._count.students,
           sessionCount: cls._count.sessions,
           tags: cls.tags.map(t => t.tag)
         }))
       }
     } else if (targetType === 'materials') {
       if (logic === 'AND') {
-        const materials = await prisma.materials.findMany({
+        const materials = await prisma.material.findMany({
           where: {
             AND: tagIds.map(tagId => ({
               tags: {
@@ -222,11 +222,10 @@ export async function POST(request: NextRequest) {
                 tag: true
               }
             },
-            uploadedBy: {
+            createdBy: {
               select: {
                 id: true,
-                name: true,
-                roleLevel: true
+                name: true
               }
             }
           }
@@ -234,7 +233,7 @@ export async function POST(request: NextRequest) {
 
         results = materials
       } else {
-        const materials = await prisma.materials.findMany({
+        const materials = await prisma.material.findMany({
           where: {
             tags: {
               some: {
@@ -250,11 +249,10 @@ export async function POST(request: NextRequest) {
                 tag: true
               }
             },
-            uploadedBy: {
+            createdBy: {
               select: {
                 id: true,
-                name: true,
-                roleLevel: true
+                name: true
               }
             }
           }
@@ -264,7 +262,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (targetType === 'sessions') {
       if (logic === 'AND') {
-        const sessions = await prisma.sessions.findMany({
+        const sessions = await prisma.session.findMany({
           where: {
             AND: tagIds.map(tagId => ({
               tags: {
@@ -286,13 +284,13 @@ export async function POST(request: NextRequest) {
             }
           },
           orderBy: {
-            scheduledAt: 'desc'
+            sessionDate: 'desc'
           }
         })
 
         results = sessions
       } else {
-        const sessions = await prisma.sessions.findMany({
+        const sessions = await prisma.session.findMany({
           where: {
             tags: {
               some: {
@@ -316,7 +314,7 @@ export async function POST(request: NextRequest) {
             }
           },
           orderBy: {
-            scheduledAt: 'desc'
+            sessionDate: 'desc'
           }
         })
 

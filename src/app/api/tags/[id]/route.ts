@@ -5,17 +5,18 @@ import { prisma } from '@/lib/prisma'
 // PATCH /api/tags/:id - 태그 수정
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAnyRole(request, ['ADMIN', 'SENIOR_TEACHER'])
 
-    const tagId = params.id
+    const { id } = await params
+    const tagId = id
     const body = await request.json()
     const { name, color, category, description } = body
 
     // 태그 존재 확인
-    const existingTag = await prisma.tags.findUnique({
+    const existingTag = await prisma.tag.findUnique({
       where: { id: tagId }
     })
 
@@ -28,7 +29,7 @@ export async function PATCH(
 
     // 이름 중복 확인 (다른 태그와)
     if (name && name !== existingTag.name) {
-      const duplicateTag = await prisma.tags.findUnique({
+      const duplicateTag = await prisma.tag.findUnique({
         where: { name }
       })
 
@@ -48,7 +49,7 @@ export async function PATCH(
     if (description !== undefined) updateData.description = description
 
     // 태그 업데이트
-    const tag = await prisma.tags.update({
+    const tag = await prisma.tag.update({
       where: { id: tagId },
       data: updateData
     })
@@ -74,15 +75,16 @@ export async function PATCH(
 // DELETE /api/tags/:id - 태그 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAnyRole(request, ['ADMIN', 'SENIOR_TEACHER'])
 
-    const tagId = params.id
+    const { id } = await params
+    const tagId = id
 
     // 태그 존재 확인
-    const tag = await prisma.tags.findUnique({
+    const tag = await prisma.tag.findUnique({
       where: { id: tagId },
       include: {
         _count: {
@@ -129,7 +131,7 @@ export async function DELETE(
     }
 
     // 태그 삭제
-    await prisma.tags.delete({
+    await prisma.tag.delete({
       where: { id: tagId }
     })
 

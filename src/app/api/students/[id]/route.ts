@@ -6,14 +6,15 @@ import { calculateGrade } from '@/lib/auth'
 // GET /api/students/:id - 학생 상세 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await requireAuth(request)
-    const studentId = params.id
+    const { id } = await params
+    const studentId = id
 
     // 학생 정보 조회
-    const student = await prisma.students.findUnique({
+    const student = await prisma.student.findUnique({
       where: { id: studentId },
       include: {
         user: {
@@ -35,7 +36,7 @@ export async function GET(
             tag: true
           }
         },
-        enrollments: {
+        classEnrollments: {
           include: {
             class: {
               select: {
@@ -51,7 +52,7 @@ export async function GET(
             session: {
               select: {
                 id: true,
-                scheduledAt: true,
+                sessionDate: true,
                 class: {
                   select: {
                     name: true
@@ -61,7 +62,7 @@ export async function GET(
             }
           },
           orderBy: {
-            createdAt: 'desc'
+            checkedAt: 'desc'
           },
           take: 50
         },
@@ -84,8 +85,7 @@ export async function GET(
           include: {
             changedBy: {
               select: {
-                name: true,
-                roleLevel: true
+                name: true
               }
             }
           },
@@ -113,7 +113,7 @@ export async function GET(
           { status: 403 }
         )
       } else if (user.roleLevel === 'PARENT') {
-        const parent = await prisma.parents.findUnique({
+        const parent = await prisma.parent.findUnique({
           where: { userId: user.id },
           include: { students: true }
         })
@@ -147,7 +147,7 @@ export async function GET(
         managementStatus: student.managementStatus,
         parent: student.parent,
         tags: student.tags.map(t => t.tag),
-        enrollments: student.enrollments,
+        enrollments: student.classEnrollments,
         createdAt: student.createdAt,
         updatedAt: student.updatedAt
       },
@@ -156,9 +156,9 @@ export async function GET(
         id: a.id,
         status: a.status,
         notes: a.notes,
-        sessionDate: a.session.scheduledAt,
+        sessionDate: a.session.sessionDate,
         className: a.session.class.name,
-        createdAt: a.createdAt
+        checkedAt: a.checkedAt
       })),
       assignments: student.submissions.map(s => ({
         id: s.id,
@@ -192,17 +192,18 @@ export async function GET(
 // PATCH /api/students/:id - 학생 정보 수정
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAnyRole(request, ['ADMIN', 'SENIOR_TEACHER'])
 
-    const studentId = params.id
+    const { id } = await params
+    const studentId = id
     const body = await request.json()
     const { name, school, phone, enrollmentStatus, managementStatus, parentId, tags } = body
 
     // 학생 존재 확인
-    const existingStudent = await prisma.students.findUnique({
+    const existingStudent = await prisma.student.findUnique({
       where: { id: studentId }
     })
 
@@ -225,12 +226,12 @@ export async function PATCH(
     // 태그 업데이트
     if (tags !== undefined) {
       // 기존 태그 삭제 후 새로 추가
-      await prisma.studentTags.deleteMany({
+      await prisma.studentTag.deleteMany({
         where: { studentId }
       })
 
       if (tags.length > 0) {
-        await prisma.studentTags.createMany({
+        await prisma.studentTag.createMany({
           data: tags.map((tagId: string) => ({
             studentId,
             tagId
@@ -240,7 +241,7 @@ export async function PATCH(
     }
 
     // 학생 정보 업데이트
-    const student = await prisma.students.update({
+    const student = await prisma.student.update({
       where: { id: studentId },
       data: updateData,
       include: {
@@ -280,15 +281,16 @@ export async function PATCH(
 // DELETE /api/students/:id - 학생 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireRole(request, 'ADMIN')
 
-    const studentId = params.id
+    const { id } = await params
+    const studentId = id
 
     // 학생 존재 확인
-    const student = await prisma.students.findUnique({
+    const student = await prisma.student.findUnique({
       where: { id: studentId }
     })
 
@@ -300,7 +302,7 @@ export async function DELETE(
     }
 
     // 관련 데이터 삭제 (cascade)
-    await prisma.students.delete({
+    await prisma.student.delete({
       where: { id: studentId }
     })
 

@@ -5,12 +5,13 @@ import { prisma } from '@/lib/prisma'
 // POST /api/students/:id/status - 학생 관리 상태 변경
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await requireAnyRole(request, ['ADMIN', 'SENIOR_TEACHER'])
 
-    const studentId = params.id
+    const { id } = await params
+    const studentId = id
     const body = await request.json()
     const { newStatus, reason } = body
 
@@ -30,7 +31,7 @@ export async function POST(
     }
 
     // 학생 존재 확인
-    const student = await prisma.students.findUnique({
+    const student = await prisma.student.findUnique({
       where: { id: studentId }
     })
 
@@ -52,7 +53,7 @@ export async function POST(
     // 트랜잭션으로 학생 상태 업데이트 + 로그 생성
     const result = await prisma.$transaction(async (tx) => {
       // 학생 상태 업데이트
-      const updatedStudent = await tx.students.update({
+      const updatedStudent = await tx.student.update({
         where: { id: studentId },
         data: {
           managementStatus: newStatus
@@ -68,7 +69,7 @@ export async function POST(
       })
 
       // 상태 변경 로그 생성
-      const statusLog = await tx.studentStatusLogs.create({
+      const statusLog = await tx.statusLog.create({
         data: {
           studentId,
           previousStatus: student.managementStatus,
@@ -79,8 +80,7 @@ export async function POST(
         include: {
           changedBy: {
             select: {
-              name: true,
-              roleLevel: true
+              name: true
             }
           }
         }
