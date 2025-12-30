@@ -24,34 +24,7 @@ CREATE TABLE "users" (
 );
 
 -- ============================================
--- 학생 관리
--- ============================================
-CREATE TABLE "students" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "userId" TEXT UNIQUE NOT NULL,
-    "studentId" TEXT UNIQUE NOT NULL,
-    "name" TEXT NOT NULL,
-    "birthDate" TIMESTAMP(3) NOT NULL,
-    "gender" "Gender" NOT NULL,
-    "grade" TEXT NOT NULL,
-    "school" TEXT,
-    "enrollmentStatus" "EnrollmentStatus" NOT NULL DEFAULT 'ENROLLED',
-    "managementStatus" "ManagementStatus" NOT NULL DEFAULT 'NORMAL',
-    "phone" TEXT,
-    "profileImageUrl" TEXT,
-    "notes" TEXT,
-    "parentId" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE,
-    FOREIGN KEY ("parentId") REFERENCES "parents"("id") ON DELETE SET NULL
-);
-
-CREATE INDEX "students_enrollmentStatus_idx" ON "students"("enrollmentStatus");
-CREATE INDEX "students_managementStatus_idx" ON "students"("managementStatus");
-
--- ============================================
--- 보호자 관리
+-- 보호자 관리 (students 테이블보다 먼저 생성)
 -- ============================================
 CREATE TABLE "parents" (
     "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -78,6 +51,33 @@ CREATE TABLE "teachers" (
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE
 );
+
+-- ============================================
+-- 학생 관리
+-- ============================================
+CREATE TABLE "students" (
+    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    "userId" TEXT UNIQUE NOT NULL,
+    "studentId" TEXT UNIQUE NOT NULL,
+    "name" TEXT NOT NULL,
+    "birthDate" TIMESTAMP(3) NOT NULL,
+    "gender" "Gender" NOT NULL,
+    "grade" TEXT NOT NULL,
+    "school" TEXT,
+    "enrollmentStatus" "EnrollmentStatus" NOT NULL DEFAULT 'ENROLLED',
+    "managementStatus" "ManagementStatus" NOT NULL DEFAULT 'NORMAL',
+    "phone" TEXT,
+    "profileImageUrl" TEXT,
+    "notes" TEXT,
+    "parentId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE,
+    FOREIGN KEY ("parentId") REFERENCES "parents"("id") ON DELETE SET NULL
+);
+
+CREATE INDEX "students_enrollmentStatus_idx" ON "students"("enrollmentStatus");
+CREATE INDEX "students_managementStatus_idx" ON "students"("managementStatus");
 
 -- ============================================
 -- 클래스 관리
