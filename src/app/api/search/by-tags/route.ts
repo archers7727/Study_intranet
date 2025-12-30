@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (targetType === 'students') {
       if (logic === 'AND') {
         // 모든 태그를 포함하는 학생
-        const students = await prisma.students.findMany({
+        const students = await prisma.student.findMany({
           where: {
             AND: tagIds.map(tagId => ({
               tags: {
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         }))
       } else {
         // 하나라도 포함하는 학생
-        const students = await prisma.students.findMany({
+        const students = await prisma.student.findMany({
           where: {
             tags: {
               some: {
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (targetType === 'classes') {
       if (logic === 'AND') {
-        const classes = await prisma.classes.findMany({
+        const classes = await prisma.class.findMany({
           where: {
             AND: tagIds.map(tagId => ({
               tags: {
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
           tags: cls.tags.map(t => t.tag)
         }))
       } else {
-        const classes = await prisma.classes.findMany({
+        const classes = await prisma.class.findMany({
           where: {
             tags: {
               some: {
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (targetType === 'materials') {
       if (logic === 'AND') {
-        const materials = await prisma.materials.findMany({
+        const materials = await prisma.material.findMany({
           where: {
             AND: tagIds.map(tagId => ({
               tags: {
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
 
         results = materials
       } else {
-        const materials = await prisma.materials.findMany({
+        const materials = await prisma.material.findMany({
           where: {
             tags: {
               some: {
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (targetType === 'sessions') {
       if (logic === 'AND') {
-        const sessions = await prisma.sessions.findMany({
+        const sessions = await prisma.session.findMany({
           where: {
             AND: tagIds.map(tagId => ({
               tags: {
@@ -292,7 +292,7 @@ export async function POST(request: NextRequest) {
 
         results = sessions
       } else {
-        const sessions = await prisma.sessions.findMany({
+        const sessions = await prisma.session.findMany({
           where: {
             tags: {
               some: {

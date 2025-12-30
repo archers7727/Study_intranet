@@ -14,7 +14,7 @@ export async function GET(
     const studentId = id
 
     // 학생 정보 조회
-    const student = await prisma.students.findUnique({
+    const student = await prisma.student.findUnique({
       where: { id: studentId },
       include: {
         user: {
@@ -114,7 +114,7 @@ export async function GET(
           { status: 403 }
         )
       } else if (user.roleLevel === 'PARENT') {
-        const parent = await prisma.parents.findUnique({
+        const parent = await prisma.parent.findUnique({
           where: { userId: user.id },
           include: { students: true }
         })
@@ -204,7 +204,7 @@ export async function PATCH(
     const { name, school, phone, enrollmentStatus, managementStatus, parentId, tags } = body
 
     // 학생 존재 확인
-    const existingStudent = await prisma.students.findUnique({
+    const existingStudent = await prisma.student.findUnique({
       where: { id: studentId }
     })
 
@@ -242,7 +242,7 @@ export async function PATCH(
     }
 
     // 학생 정보 업데이트
-    const student = await prisma.students.update({
+    const student = await prisma.student.update({
       where: { id: studentId },
       data: updateData,
       include: {
@@ -291,7 +291,7 @@ export async function DELETE(
     const studentId = id
 
     // 학생 존재 확인
-    const student = await prisma.students.findUnique({
+    const student = await prisma.student.findUnique({
       where: { id: studentId }
     })
 
@@ -303,7 +303,7 @@ export async function DELETE(
     }
 
     // 관련 데이터 삭제 (cascade)
-    await prisma.students.delete({
+    await prisma.student.delete({
       where: { id: studentId }
     })
 

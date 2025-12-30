@@ -8,10 +8,10 @@ export async function GET(request: NextRequest) {
     await requireAnyRole(request, ['ADMIN', 'SENIOR_TEACHER'])
 
     // 총 태그 수
-    const totalTags = await prisma.tags.count()
+    const totalTags = await prisma.tag.count()
 
     // 모든 태그와 사용량
-    const tags = await prisma.tags.findMany({
+    const tags = await prisma.tag.findMany({
       include: {
         _count: {
           select: {
@@ -59,32 +59,32 @@ export async function GET(request: NextRequest) {
       taggedSessions,
       taggedMaterials
     ] = await Promise.all([
-      prisma.students.count(),
-      prisma.classes.count(),
-      prisma.sessions.count(),
-      prisma.materials.count(),
-      prisma.students.count({
+      prisma.student.count(),
+      prisma.class.count(),
+      prisma.session.count(),
+      prisma.material.count(),
+      prisma.student.count({
         where: {
           tags: {
             some: {}
           }
         }
       }),
-      prisma.classes.count({
+      prisma.class.count({
         where: {
           tags: {
             some: {}
           }
         }
       }),
-      prisma.sessions.count({
+      prisma.session.count({
         where: {
           tags: {
             some: {}
           }
         }
       }),
-      prisma.materials.count({
+      prisma.material.count({
         where: {
           tags: {
             some: {}

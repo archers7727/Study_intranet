@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         whereClause.userId = user.id
       } else if (user.roleLevel === 'PARENT') {
         // 학부모는 자녀만
-        const parent = await prisma.parents.findUnique({
+        const parent = await prisma.parent.findUnique({
           where: { userId: user.id },
           include: { students: true }
         })
@@ -89,10 +89,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 총 개수 조회
-    const total = await prisma.students.count({ where: whereClause })
+    const total = await prisma.student.count({ where: whereClause })
 
     // 학생 목록 조회
-    const students = await prisma.students.findMany({
+    const students = await prisma.student.findMany({
       where: whereClause,
       include: {
         user: {
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prisma users 테이블에 레코드 생성
-    const newUser = await prisma.users.create({
+    const newUser = await prisma.user.create({
       data: {
         id: authData.user!.id,
         email,
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
     })
 
     // 학생 정보 생성
-    const student = await prisma.students.create({
+    const student = await prisma.student.create({
       data: {
         userId: newUser.id,
         studentId,

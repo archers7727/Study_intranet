@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 태그 목록 조회
-    const tags = await prisma.tags.findMany({
+    const tags = await prisma.tag.findMany({
       where: whereClause,
       include: {
         _count: {
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 중복 확인
-    const existingTag = await prisma.tags.findUnique({
+    const existingTag = await prisma.tag.findUnique({
       where: { name }
     })
 
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 태그 생성
-    const tag = await prisma.tags.create({
+    const tag = await prisma.tag.create({
       data: {
         name,
         color,

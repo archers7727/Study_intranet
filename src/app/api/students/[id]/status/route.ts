@@ -31,7 +31,7 @@ export async function POST(
     }
 
     // 학생 존재 확인
-    const student = await prisma.students.findUnique({
+    const student = await prisma.student.findUnique({
       where: { id: studentId }
     })
 
