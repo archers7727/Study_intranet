@@ -225,8 +225,7 @@ export async function POST(request: NextRequest) {
             createdBy: {
               select: {
                 id: true,
-                name: true,
-                roleLevel: true
+                name: true
               }
             }
           }
@@ -253,8 +252,7 @@ export async function POST(request: NextRequest) {
             createdBy: {
               select: {
                 id: true,
-                name: true,
-                roleLevel: true
+                name: true
               }
             }
           }
