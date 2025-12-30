@@ -19,7 +19,7 @@ const navItems: NavItem[] = [
   },
   {
     title: '학생 관리',
-    href: '/dashboard/students',
+    href: '/students',
     minRole: ['ADMIN', 'SENIOR_TEACHER', 'TEACHER'],
   },
   {
