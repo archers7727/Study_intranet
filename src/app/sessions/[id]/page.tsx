@@ -84,6 +84,7 @@ interface SessionDetail {
     id: string
     title: string
     dueDate: string
+    maxScore: number | null
     _count: {
       submissions: number
     }
