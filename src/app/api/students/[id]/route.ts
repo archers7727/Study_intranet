@@ -6,11 +6,12 @@ import { calculateGrade } from '@/lib/auth'
 // GET /api/students/:id - 학생 상세 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await requireAuth(request)
-    const studentId = params.id
+    const { id } = await params
+    const studentId = id
 
     // 학생 정보 조회
     const student = await prisma.students.findUnique({
@@ -192,12 +193,13 @@ export async function GET(
 // PATCH /api/students/:id - 학생 정보 수정
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAnyRole(request, ['ADMIN', 'SENIOR_TEACHER'])
 
-    const studentId = params.id
+    const { id } = await params
+    const studentId = id
     const body = await request.json()
     const { name, school, phone, enrollmentStatus, managementStatus, parentId, tags } = body
 
@@ -280,12 +282,13 @@ export async function PATCH(
 // DELETE /api/students/:id - 학생 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireRole(request, 'ADMIN')
 
-    const studentId = params.id
+    const { id } = await params
+    const studentId = id
 
     // 학생 존재 확인
     const student = await prisma.students.findUnique({

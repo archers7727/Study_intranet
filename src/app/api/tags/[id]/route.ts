@@ -5,12 +5,13 @@ import { prisma } from '@/lib/prisma'
 // PATCH /api/tags/:id - 태그 수정
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAnyRole(request, ['ADMIN', 'SENIOR_TEACHER'])
 
-    const tagId = params.id
+    const { id } = await params
+    const tagId = id
     const body = await request.json()
     const { name, color, category, description } = body
 
@@ -74,12 +75,13 @@ export async function PATCH(
 // DELETE /api/tags/:id - 태그 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAnyRole(request, ['ADMIN', 'SENIOR_TEACHER'])
 
-    const tagId = params.id
+    const { id } = await params
+    const tagId = id
 
     // 태그 존재 확인
     const tag = await prisma.tags.findUnique({
