@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -21,38 +21,49 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 
-const loginSchema = z.object({
+const signupSchema = z.object({
   email: z.string().email({ message: '올바른 이메일 주소를 입력해주세요.' }),
   password: z.string().min(6, { message: '비밀번호는 최소 6자 이상이어야 합니다.' }),
+  name: z.string().min(2, { message: '이름은 최소 2자 이상이어야 합니다.' }),
+  roleLevel: z.enum(['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'], {
+    required_error: '역할을 선택해주세요.',
+  }),
 })
 
-type LoginFormValues = z.infer<typeof loginSchema>
+type SignupFormValues = z.infer<typeof signupSchema>
 
-function LoginForm() {
+function SignupForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
-
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       email: '',
       password: '',
+      name: '',
+      roleLevel: 'TEACHER',
     },
   })
 
-  async function onSubmit(data: LoginFormValues) {
+  async function onSubmit(data: SignupFormValues) {
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,16 +74,16 @@ function LoginForm() {
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        setError(result.error?.message || '로그인에 실패했습니다.')
+        setError(result.error?.message || '회원가입에 실패했습니다.')
         return
       }
 
-      // 로그인 성공 시 리다이렉트
-      router.push(redirectTo)
-      router.refresh()
+      // 회원가입 성공 시 로그인 페이지로 이동
+      alert('회원가입이 완료되었습니다. 로그인해주세요.')
+      router.push('/login')
     } catch (err: any) {
-      setError('로그인 중 오류가 발생했습니다.')
-      console.error('Login error:', err)
+      setError('회원가입 중 오류가 발생했습니다.')
+      console.error('Signup error:', err)
     } finally {
       setIsLoading(false)
     }
@@ -82,9 +93,9 @@ function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">로그인</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">회원가입</CardTitle>
           <CardDescription className="text-center">
-            Study Intranet에 로그인하세요
+            Study Intranet 계정을 생성하세요
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -108,6 +119,7 @@ function LoginForm() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="password"
@@ -122,6 +134,58 @@ function LoginForm() {
                         disabled={isLoading}
                       />
                     </FormControl>
+                    <FormDescription>
+                      최소 6자 이상 입력해주세요.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>이름</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="홍길동"
+                        {...field}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="roleLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>역할</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={isLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="역할을 선택하세요" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="ADMIN">관리자</SelectItem>
+                        <SelectItem value="SENIOR_TEACHER">수석교사</SelectItem>
+                        <SelectItem value="TEACHER">일반교사</SelectItem>
+                        <SelectItem value="ASSISTANT">보조교사</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      가입 후 역할 변경은 관리자에게 문의하세요.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -134,16 +198,16 @@ function LoginForm() {
               )}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? '로그인 중...' : '로그인'}
+                {isLoading ? '가입 중...' : '회원가입'}
               </Button>
             </form>
           </Form>
 
           <div className="mt-4 text-center text-sm text-muted-foreground">
             <p>
-              계정이 없으신가요?{' '}
-              <Link href="/signup" className="font-medium text-primary hover:underline">
-                회원가입
+              이미 계정이 있으신가요?{' '}
+              <Link href="/login" className="font-medium text-primary hover:underline">
+                로그인
               </Link>
             </p>
           </div>
@@ -153,7 +217,7 @@ function LoginForm() {
   )
 }
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <Suspense fallback={
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -162,7 +226,7 @@ export default function LoginPage() {
         </div>
       </div>
     }>
-      <LoginForm />
+      <SignupForm />
     </Suspense>
   )
 }
