@@ -220,6 +220,7 @@ export async function POST(request: NextRequest) {
     })
 
     // 학생 정보 생성
+    const birthDateObj = new Date(birthDate)
     const student = await prisma.student.create({
       data: {
         user: {
@@ -227,7 +228,8 @@ export async function POST(request: NextRequest) {
         },
         studentId,
         name,
-        birthDate: new Date(birthDate),
+        birthDate: birthDateObj,
+        grade: calculateGrade(birthDateObj),
         gender,
         school: school || null,
         phone,
