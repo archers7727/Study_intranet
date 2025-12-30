@@ -80,8 +80,7 @@ export async function POST(
         include: {
           changedBy: {
             select: {
-              name: true,
-              roleLevel: true
+              name: true
             }
           }
         }

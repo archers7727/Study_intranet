@@ -36,7 +36,7 @@ export async function GET(
             tag: true
           }
         },
-        enrollments: {
+        classEnrollments: {
           include: {
             class: {
               select: {
@@ -85,8 +85,7 @@ export async function GET(
           include: {
             changedBy: {
               select: {
-                name: true,
-                roleLevel: true
+                name: true
               }
             }
           },
@@ -148,7 +147,7 @@ export async function GET(
         managementStatus: student.managementStatus,
         parent: student.parent,
         tags: student.tags.map(t => t.tag),
-        enrollments: student.enrollments,
+        enrollments: student.classEnrollments,
         createdAt: student.createdAt,
         updatedAt: student.updatedAt
       },

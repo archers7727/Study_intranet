@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
           select: { classId: true }
         })
 
-        whereClause.enrollments = {
+        whereClause.classEnrollments = {
           some: {
             classId: {
               in: assistantClasses.map(c => c.classId)
