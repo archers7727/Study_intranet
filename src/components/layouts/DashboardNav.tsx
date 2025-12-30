@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
   },
   {
     title: '태그 관리',
-    href: '/dashboard/tags',
+    href: '/tags',
     minRole: ['ADMIN', 'SENIOR_TEACHER'],
   },
   {
