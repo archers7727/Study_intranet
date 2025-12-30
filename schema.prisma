@@ -1,0 +1,481 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 권한 및 사용자 관리
+// ============================================
+
+enum RoleLevel {
+  ADMIN           // LV0 - 관리자
+  SENIOR_TEACHER  // LV1 - 수석교사
+  TEACHER         // LV2 - 일반교사
+  ASSISTANT       // LV3 - 보조교사
+  STUDENT         // LV4 - 학생
+  PARENT          // LV5 - 학부모
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum EnrollmentStatus {
+  ENROLLED  // 재원
+  WAITING   // 대기
+  LEFT      // 퇴원
+}
+
+enum ManagementStatus {
+  NORMAL    // 정상
+  CAUTION   // 주의
+}
+
+enum AttendanceStatus {
+  PRESENT   // 출석
+  ABSENT    // 결석
+  LATE      // 지각
+  EXCUSED   // 사유결석
+}
+
+enum AssignmentStatus {
+  NOT_SUBMITTED  // 미제출
+  SUBMITTED      // 제출
+  GRADED         // 채점완료
+}
+
+enum SessionStatus {
+  SCHEDULED  // 예정
+  IN_PROGRESS // 진행중
+  COMPLETED  // 완료
+  CANCELLED  // 취소
+}
+
+// ============================================
+// 사용자 테이블 (Supabase Auth 연동)
+// ============================================
+
+model User {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  name          String
+  roleLevel     RoleLevel   @default(STUDENT)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  student       Student?
+  parent        Parent?
+  teacher       Teacher?
+
+  @@map("users")
+}
+
+// ============================================
+// 학생 관리
+// ============================================
+
+model Student {
+  id                String            @id @default(uuid())
+  userId            String            @unique
+  studentId         String            @unique // 커스텀 ID (예: 홍길동12345)
+  name              String
+  birthDate         DateTime
+  gender            Gender
+  grade             String            // 학년 (예: "초5", "중2", "고1")
+  school            String?
+  enrollmentStatus  EnrollmentStatus  @default(ENROLLED)
+  managementStatus  ManagementStatus  @default(NORMAL)
+  phone             String?
+  profileImageUrl   String?
+  notes             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId          String?
+  parent            Parent?           @relation(fields: [parentId], references: [id])
+
+  // Many-to-many
+  tags              StudentTag[]
+  classEnrollments  ClassStudent[]
+  attendances       Attendance[]
+  submissions       Submission[]
+  statusLogs        StatusLog[]
+
+  @@index([enrollmentStatus])
+  @@index([managementStatus])
+  @@map("students")
+}
+
+// ============================================
+// 보호자 관리
+// ============================================
+
+model Parent {
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  name                  String
+  phone                 String
+  relation              String?   // 관계 (부, 모, 조부모 등)
+  notificationSettings  Json?     // 알림 설정 (이메일, SMS 등)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students              Student[]
+
+  @@map("parents")
+}
+
+// ============================================
+// 교사 관리
+// ============================================
+
+model Teacher {
+  id            String      @id @default(uuid())
+  userId        String      @unique
+  name          String
+  phone         String?
+  specialties   String[]    // 전문 분야
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mainClasses       Class[]         @relation("MainTeacher")
+  assistantClasses  ClassAssistant[]
+  sessionsCreated   Session[]       @relation("SessionCreator")
+  attendanceChecks  Attendance[]
+  assignmentsCreated Assignment[]
+  submissionsGraded  Submission[]
+  materialsCreated   Material[]
+  statusLogsCreated  StatusLog[]
+
+  @@map("teachers")
+}
+
+// ============================================
+// 클래스 관리
+// ============================================
+
+model Class {
+  id                  String            @id @default(uuid())
+  name                String
+  description         String?
+  cost                Decimal?          @db.Decimal(10, 2)
+  mainTeacherId       String
+  recurringSchedules  Json?             // 반복 일정 [{dayOfWeek: 1, startTime: "14:00", endTime: "16:00"}]
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  // Relations
+  mainTeacher         Teacher           @relation("MainTeacher", fields: [mainTeacherId], references: [id])
+  assistantTeachers   ClassAssistant[]
+  students            ClassStudent[]
+  sessions            Session[]
+  tags                ClassTag[]
+
+  @@map("classes")
+}
+
+// ============================================
+// 클래스-교사 연결 (보조교사)
+// ============================================
+
+model ClassAssistant {
+  classId     String
+  teacherId   String
+  assignedAt  DateTime  @default(now())
+
+  class       Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher     Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@id([classId, teacherId])
+  @@map("class_assistants")
+}
+
+// ============================================
+// 클래스-학생 연결
+// ============================================
+
+model ClassStudent {
+  classId     String
+  studentId   String
+  enrolledAt  DateTime  @default(now())
+
+  class       Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([classId, studentId])
+  @@map("class_students")
+}
+
+// ============================================
+// 세션 관리 (개별 수업)
+// ============================================
+
+model Session {
+  id          String        @id @default(uuid())
+  classId     String
+  sessionDate DateTime      // 수업 날짜
+  startTime   String        // "14:00"
+  endTime     String        // "16:00"
+  location    String?
+  status      SessionStatus @default(SCHEDULED)
+  notes       String?
+  createdById String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  class       Class         @relation(fields: [classId], references: [id], onDelete: Cascade)
+  createdBy   Teacher       @relation("SessionCreator", fields: [createdById], references: [id])
+
+  attendances Attendance[]
+  assignments Assignment[]
+  materials   SessionMaterial[]
+  tags        SessionTag[]
+
+  @@index([sessionDate])
+  @@index([classId, sessionDate])
+  @@map("sessions")
+}
+
+// ============================================
+// 출석 관리
+// ============================================
+
+model Attendance {
+  id          String            @id @default(uuid())
+  sessionId   String
+  studentId   String
+  status      AttendanceStatus
+  checkedAt   DateTime          @default(now())
+  checkedById String?
+  notes       String?
+
+  // Relations
+  session     Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  checkedBy   Teacher?  @relation(fields: [checkedById], references: [id])
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@index([studentId])
+  @@map("attendances")
+}
+
+// ============================================
+// 과제 관리
+// ============================================
+
+model Assignment {
+  id          String    @id @default(uuid())
+  sessionId   String
+  title       String
+  description String?
+  dueDate     DateTime
+  maxScore    Int?
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdBy   Teacher      @relation(fields: [createdById], references: [id])
+
+  submissions Submission[]
+  tags        AssignmentTag[]
+
+  @@index([dueDate])
+  @@index([sessionId])
+  @@map("assignments")
+}
+
+// ============================================
+// 과제 제출
+// ============================================
+
+model Submission {
+  id            String            @id @default(uuid())
+  assignmentId  String
+  studentId     String
+  status        AssignmentStatus  @default(NOT_SUBMITTED)
+  submittedAt   DateTime?
+  fileUrl       String?
+  score         Int?
+  feedback      String?
+  gradedAt      DateTime?
+  gradedById    String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  assignment    Assignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  gradedBy      Teacher?    @relation(fields: [gradedById], references: [id])
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@map("submissions")
+}
+
+// ============================================
+// 수업 자료
+// ============================================
+
+model Material {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String?   // PDF, PPT, etc.
+  fileSize    Int?      // bytes
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  createdBy   Teacher           @relation(fields: [createdById], references: [id])
+
+  sessions    SessionMaterial[]
+  tags        MaterialTag[]
+
+  @@map("materials")
+}
+
+// ============================================
+// 세션-자료 연결
+// ============================================
+
+model SessionMaterial {
+  sessionId   String
+  materialId  String
+  addedAt     DateTime  @default(now())
+
+  session     Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  material    Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, materialId])
+  @@map("session_materials")
+}
+
+// ============================================
+// 태그 시스템
+// ============================================
+
+model Tag {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  color       String    @default("#808080") // Hex color
+  category    String?   // 분류 (예: "수준", "성향", "과목")
+  description String?
+  usageCount  Int       @default(0) // 캐싱용
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  students    StudentTag[]
+  classes     ClassTag[]
+  sessions    SessionTag[]
+  assignments AssignmentTag[]
+  materials   MaterialTag[]
+
+  @@map("tags")
+}
+
+// 태그 연결 테이블들
+
+model StudentTag {
+  studentId   String
+  tagId       String
+  assignedAt  DateTime  @default(now())
+
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, tagId])
+  @@map("student_tags")
+}
+
+model ClassTag {
+  classId     String
+  tagId       String
+  assignedAt  DateTime  @default(now())
+
+  class       Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([classId, tagId])
+  @@map("class_tags")
+}
+
+model SessionTag {
+  sessionId   String
+  tagId       String
+  assignedAt  DateTime  @default(now())
+
+  session     Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, tagId])
+  @@map("session_tags")
+}
+
+model AssignmentTag {
+  assignmentId String
+  tagId        String
+  assignedAt   DateTime  @default(now())
+
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  tag          Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([assignmentId, tagId])
+  @@map("assignment_tags")
+}
+
+model MaterialTag {
+  materialId  String
+  tagId       String
+  assignedAt  DateTime  @default(now())
+
+  material    Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([materialId, tagId])
+  @@map("material_tags")
+}
+
+// ============================================
+// 상태 변경 이력
+// ============================================
+
+model StatusLog {
+  id              String    @id @default(uuid())
+  studentId       String
+  previousStatus  ManagementStatus
+  newStatus       ManagementStatus
+  reason          String?
+  changedById     String
+  changedAt       DateTime  @default(now())
+
+  // Relations
+  student         Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  changedBy       Teacher   @relation(fields: [changedById], references: [id])
+
+  @@index([studentId])
+  @@map("status_logs")
+}
