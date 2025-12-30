@@ -5,12 +5,13 @@ import { prisma } from '@/lib/prisma'
 // POST /api/students/:id/status - 학생 관리 상태 변경
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await requireAnyRole(request, ['ADMIN', 'SENIOR_TEACHER'])
 
-    const studentId = params.id
+    const { id } = await params
+    const studentId = id
     const body = await request.json()
     const { newStatus, reason } = body
 
