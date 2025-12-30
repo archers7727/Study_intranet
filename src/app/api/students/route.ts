@@ -222,14 +222,18 @@ export async function POST(request: NextRequest) {
     // 학생 정보 생성
     const student = await prisma.student.create({
       data: {
-        userId: newUser.id,
+        user: {
+          connect: { id: newUser.id }
+        },
         studentId,
         name,
         birthDate: new Date(birthDate),
         gender,
         school: school || null,
         phone,
-        parentId: parentId || null,
+        parent: parentId ? {
+          connect: { id: parentId }
+        } : undefined,
         enrollmentStatus: 'ENROLLED',
         managementStatus: 'NORMAL',
         tags: tags && tags.length > 0 ? {
