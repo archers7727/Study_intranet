@@ -226,12 +226,12 @@ export async function PATCH(
     // 태그 업데이트
     if (tags !== undefined) {
       // 기존 태그 삭제 후 새로 추가
-      await prisma.studentTags.deleteMany({
+      await prisma.studentTag.deleteMany({
         where: { studentId }
       })
 
       if (tags.length > 0) {
-        await prisma.studentTags.createMany({
+        await prisma.studentTag.createMany({
           data: tags.map((tagId: string) => ({
             studentId,
             tagId

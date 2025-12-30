@@ -69,9 +69,9 @@ export async function GET(request: NextRequest) {
         }
       } else if (user.roleLevel === 'ASSISTANT') {
         // 보조교사는 담당 클래스 학생만
-        const assistantClasses = await prisma.classAssistants.findMany({
+        const assistantClasses = await prisma.classAssistant.findMany({
           where: {
-            teachers: {
+            teacher: {
               userId: user.id
             }
           },
