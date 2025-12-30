@@ -84,6 +84,23 @@ export async function GET(
             }
           }
         },
+        materials: {
+          include: {
+            material: {
+              include: {
+                createdBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                  }
+                }
+              }
+            }
+          },
+          orderBy: {
+            addedAt: 'desc'
+          }
+        },
         tags: {
           include: {
             tag: true

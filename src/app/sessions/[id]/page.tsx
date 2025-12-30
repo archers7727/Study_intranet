@@ -20,7 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Edit, Calendar, Clock, MapPin, Users, CheckCircle } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { ArrowLeft, Edit, Calendar, Clock, MapPin, Users, CheckCircle, File, FileText, Plus, Download, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
@@ -78,6 +86,21 @@ interface SessionDetail {
       submissions: number
     }
   }>
+  materials: Array<{
+    addedAt: string
+    material: {
+      id: string
+      title: string
+      description: string | null
+      fileUrl: string
+      fileType: string | null
+      fileSize: number | null
+      createdBy: {
+        id: string
+        name: string
+      }
+    }
+  }>
   tags: Array<{
     tag: {
       id: string
@@ -85,6 +108,12 @@ interface SessionDetail {
       color: string
     }
   }>
+}
+
+interface Material {
+  id: string
+  title: string
+  fileType: string | null
 }
 
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'
@@ -98,9 +127,13 @@ export default function SessionDetailPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [attendanceMap, setAttendanceMap] = useState<Map<string, AttendanceStatus>>(new Map())
+  const [availableMaterials, setAvailableMaterials] = useState<Material[]>([])
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string>('')
+  const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchSession()
+    fetchAvailableMaterials()
   }, [sessionId])
 
   const fetchSession = async () => {
@@ -160,6 +193,64 @@ export default function SessionDetailPage() {
       alert('출석 저장에 실패했습니다.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const fetchAvailableMaterials = async () => {
+    try {
+      const response = await fetch('/api/materials')
+      if (!response.ok) throw new Error('Failed to fetch materials')
+      const data = await response.json()
+      setAvailableMaterials(data.data || [])
+    } catch (error) {
+      console.error('Error fetching materials:', error)
+    }
+  }
+
+  const handleAddMaterial = async () => {
+    if (!selectedMaterialId) return
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/materials`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ materialId: selectedMaterialId }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to add material')
+      }
+
+      setMaterialDialogOpen(false)
+      setSelectedMaterialId('')
+      await fetchSession()
+    } catch (error) {
+      console.error('Error adding material:', error)
+      alert('자료 추가에 실패했습니다.')
+    }
+  }
+
+  const handleRemoveMaterial = async (materialId: string) => {
+    if (!confirm('이 자료를 세션에서 제거하시겠습니까?')) return
+
+    try {
+      const response = await fetch(
+        `/api/sessions/${sessionId}/materials?materialId=${materialId}`,
+        {
+          method: 'DELETE',
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to remove material')
+      }
+
+      await fetchSession()
+    } catch (error) {
+      console.error('Error removing material:', error)
+      alert('자료 제거에 실패했습니다.')
     }
   }
 
@@ -394,6 +485,118 @@ export default function SessionDetailPage() {
                     </TableRow>
                   )
                 })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 학습 자료 */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>학습 자료 ({session.materials.length})</CardTitle>
+            <Dialog open={materialDialogOpen} onOpenChange={setMaterialDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  자료 추가
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>자료 추가</DialogTitle>
+                  <DialogDescription>
+                    세션에 추가할 자료를 선택하세요.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Select value={selectedMaterialId} onValueChange={setSelectedMaterialId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="자료 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableMaterials
+                        .filter(
+                          (m) =>
+                            !session.materials.some(
+                              (sm) => sm.material.id === m.id
+                            )
+                        )
+                        .map((material) => (
+                          <SelectItem key={material.id} value={material.id}>
+                            {material.title} {material.fileType && `(${material.fileType})`}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleAddMaterial} className="w-full">
+                    추가
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {session.materials.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              추가된 자료가 없습니다.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>제목</TableHead>
+                  <TableHead>타입</TableHead>
+                  <TableHead>업로드자</TableHead>
+                  <TableHead>추가일</TableHead>
+                  <TableHead>작업</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {session.materials.map(({ material, addedAt }) => (
+                  <TableRow key={material.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium">{material.title}</span>
+                      </div>
+                      {material.description && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          {material.description}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{material.fileType || '파일'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {material.createdBy.name}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500">
+                      {format(new Date(addedAt), 'PPP', { locale: ko })}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(material.fileUrl, '_blank')}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveMaterial(material.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}
