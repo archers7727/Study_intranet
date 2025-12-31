@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = createSupabaseAdmin()
 
     // 이메일로 사용자 찾기
-    const { data, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers()
 
-    if (listError || !data) {
+    if (listError || !listData) {
       console.error('List users error:', listError)
       return NextResponse.json<ApiResponse>({
         success: false,
@@ -48,7 +48,9 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    const user = data.users.find(u => u.email === email)
+    // Type assertion to help TypeScript understand the structure
+    const users = listData.users as Array<{ id: string; email?: string }>
+    const user = users.find(u => u.email === email)
 
     if (!user) {
       return NextResponse.json<ApiResponse>({
