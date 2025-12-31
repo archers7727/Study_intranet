@@ -34,21 +34,21 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = createSupabaseAdmin()
 
     // 이메일로 사용자 찾기
-    const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+    const { data, error: listError } = await supabaseAdmin.auth.admin.listUsers()
 
-    if (listError) {
+    if (listError || !data) {
       console.error('List users error:', listError)
       return NextResponse.json<ApiResponse>({
         success: false,
         error: {
           code: 'AUTH_ERROR',
           message: '사용자 목록 조회 중 오류가 발생했습니다.',
-          details: listError.message,
+          details: listError?.message,
         },
       }, { status: 500 })
     }
 
-    const user = users.users.find(u => u.email === email)
+    const user = data.users.find(u => u.email === email)
 
     if (!user) {
       return NextResponse.json<ApiResponse>({
@@ -61,19 +61,19 @@ export async function POST(request: NextRequest) {
     }
 
     // 비밀번호 재설정
-    const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+    const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       user.id,
       { password: newPassword }
     )
 
-    if (updateError) {
+    if (updateError || !updateData) {
       console.error('Update password error:', updateError)
       return NextResponse.json<ApiResponse>({
         success: false,
         error: {
           code: 'AUTH_ERROR',
           message: '비밀번호 재설정 중 오류가 발생했습니다.',
-          details: updateError.message,
+          details: updateError?.message,
         },
       }, { status: 500 })
     }
@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
       data: {
         message: '비밀번호가 성공적으로 재설정되었습니다.',
         user: {
-          id: data.user.id,
-          email: data.user.email,
+          id: updateData.user.id,
+          email: updateData.user.email,
         },
       },
     }, { status: 200 })
