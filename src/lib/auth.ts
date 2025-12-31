@@ -6,7 +6,7 @@ import { User } from '@/types'
 // 서버사이드에서 현재 로그인한 사용자 가져오기
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    const supabase = createSupabaseServerClient()
+    const supabase = await createSupabaseServerClient()
 
     const {
       data: { session },

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseRouteHandler } from '@/lib/supabase/server'
 import { ApiResponse } from '@/types'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient()
+    const supabase = await createSupabaseRouteHandler()
 
     const { error } = await supabase.auth.signOut()
 

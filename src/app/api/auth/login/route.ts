@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseRouteHandler } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { ApiResponse } from '@/types'
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Supabase로 로그인
-    const supabase = createSupabaseServerClient()
+    const supabase = await createSupabaseRouteHandler()
 
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
