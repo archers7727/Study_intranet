@@ -30,11 +30,18 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError || !authData.session) {
+      console.error('Supabase auth error:', authError)
+      console.error('Auth error details:', {
+        message: authError?.message,
+        status: authError?.status,
+        name: authError?.name,
+      })
       return NextResponse.json<ApiResponse>({
         success: false,
         error: {
           code: 'UNAUTHORIZED',
           message: '이메일 또는 비밀번호가 올바르지 않습니다.',
+          details: authError?.message,
         },
       }, { status: 401 })
     }

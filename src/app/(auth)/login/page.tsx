@@ -63,7 +63,11 @@ function LoginForm() {
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        setError(result.error?.message || '로그인에 실패했습니다.')
+        console.error('Login failed:', result.error)
+        const errorMessage = result.error?.details
+          ? `${result.error.message} (${result.error.details})`
+          : result.error?.message || '로그인에 실패했습니다.'
+        setError(errorMessage)
         return
       }
 
