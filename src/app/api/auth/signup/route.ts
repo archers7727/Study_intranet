@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { RoleLevel } from '@/types'
 import { ApiResponse } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

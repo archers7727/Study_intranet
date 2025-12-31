@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/lib/auth'
 import { DashboardHeader } from '@/components/layouts/DashboardHeader'
 import { DashboardNav } from '@/components/layouts/DashboardNav'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardLayout({
   children,
 }: {
