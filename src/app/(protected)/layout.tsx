@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { DashboardHeader } from '@/components/layouts/DashboardHeader'
 import { DashboardNav } from '@/components/layouts/DashboardNav'
 
-export default async function AssignmentsLayout({
+export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode
@@ -12,12 +12,6 @@ export default async function AssignmentsLayout({
 
   if (!user) {
     redirect('/login')
-  }
-
-  // 과제 관리는 LV0-3만 접근 가능
-  const canAccess = ['ADMIN', 'SENIOR_TEACHER', 'TEACHER', 'ASSISTANT'].includes(user.roleLevel)
-  if (!canAccess) {
-    redirect('/dashboard')
   }
 
   return (

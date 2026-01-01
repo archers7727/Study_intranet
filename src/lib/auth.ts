@@ -1,10 +1,11 @@
+import { cache } from 'react'
 import { RoleLevel } from '@/types'
 import { createSupabaseServerClient } from './supabase/server'
 import { prisma } from './prisma'
 import { User } from '@/types'
 
-// 서버사이드에서 현재 로그인한 사용자 가져오기
-export async function getCurrentUser(): Promise<User | null> {
+// 서버사이드에서 현재 로그인한 사용자 가져오기 (캐시로 중복 호출 방지)
+export const getCurrentUser = cache(async (): Promise<User | null> => {
   try {
     const supabase = await createSupabaseServerClient()
 
@@ -45,7 +46,7 @@ export async function getCurrentUser(): Promise<User | null> {
     console.error('getCurrentUser error:', error)
     return null
   }
-}
+})
 
 // 권한 체크
 export async function checkPermission(requiredRole: RoleLevel): Promise<boolean> {
