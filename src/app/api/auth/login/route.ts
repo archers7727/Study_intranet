@@ -93,7 +93,13 @@ export async function POST(request: NextRequest) {
 
     // 수집된 쿠키들을 응답에 설정
     cookiesToSet.forEach(({ name, value, options }) => {
-      response.cookies.set(name, value, options)
+      response.cookies.set(name, value, {
+        ...options,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        httpOnly: true,
+      })
     })
 
     return response
