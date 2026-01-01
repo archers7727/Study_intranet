@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseRouteHandler } from '@/lib/supabase/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { ApiResponse } from '@/types'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createSupabaseRouteHandler()
+    // 쿠키 저장용 배열
+    const cookiesToSet: { name: string; value: string; options: CookieOptions }[] = []
+
+    // Supabase 클라이언트 생성
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookies) {
+            cookies.forEach((cookie) => {
+              cookiesToSet.push(cookie)
+            })
+          },
+        },
+      }
+    )
 
     const { error } = await supabase.auth.signOut()
 
@@ -18,12 +37,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    return NextResponse.json<ApiResponse>({
+    const response = NextResponse.json<ApiResponse>({
       success: true,
       data: {
         message: '로그아웃되었습니다.',
       },
     }, { status: 200 })
+
+    // 수집된 쿠키들을 응답에 설정
+    cookiesToSet.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options)
+    })
+
+    return response
   } catch (error: any) {
     console.error('Logout error:', error)
     return NextResponse.json<ApiResponse>({
