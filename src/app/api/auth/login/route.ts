@@ -50,35 +50,36 @@ export async function POST(request: NextRequest) {
         success: false,
         error: {
           code: 'UNAUTHORIZED',
-          message: '이메일 또는 비밀번호가 올바르지 않습니다.',
+          message: authError?.message || '이메일 또는 비밀번호가 올바르지 않습니다.',
         },
       }, { status: 401 })
     }
 
-    // Prisma에서 사용자 정보 조회
-    const user = await prisma.user.findUnique({
-      where: { id: authData.user.id },
-    })
-
-    if (!user) {
-      return NextResponse.json<ApiResponse>({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: '사용자 정보를 찾을 수 없습니다.',
-        },
-      }, { status: 404 })
+    // Prisma에서 사용자 정보 조회 시도
+    let user = null
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: authData.user.id },
+      })
+    } catch (prismaError: any) {
+      console.error('Prisma error:', prismaError)
+      // Prisma 에러가 발생해도 로그인은 계속 진행
     }
 
-    // 성공 응답 생성
+    // 성공 응답 생성 (Prisma 사용자 정보가 없어도 로그인 성공)
     const response = NextResponse.json<ApiResponse>({
       success: true,
       data: {
-        user: {
+        user: user ? {
           id: user.id,
           email: user.email,
           name: user.name,
           roleLevel: user.roleLevel,
+        } : {
+          id: authData.user.id,
+          email: authData.user.email!,
+          name: authData.user.user_metadata?.name || 'User',
+          roleLevel: authData.user.user_metadata?.roleLevel || 'STUDENT',
         },
         session: {
           access_token: authData.session.access_token,
