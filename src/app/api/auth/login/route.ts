@@ -95,10 +95,8 @@ export async function POST(request: NextRequest) {
     cookiesToSet.forEach(({ name, value, options }) => {
       response.cookies.set(name, value, {
         ...options,
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        httpOnly: true,
+        path: options?.path || '/',
+        httpOnly: options?.httpOnly ?? true,
       })
     })
 
