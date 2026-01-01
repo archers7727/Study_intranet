@@ -9,20 +9,35 @@ export async function getCurrentUser(): Promise<User | null> {
     const supabase = await createSupabaseServerClient()
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession()
+      data: { user: authUser },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-    if (!session?.user) {
+    if (authError || !authUser) {
       return null
     }
 
-    // Prisma에서 사용자 정보 조회
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    })
+    // Prisma에서 사용자 정보 조회 시도
+    let user = null
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: authUser.id },
+      })
+    } catch (prismaError) {
+      console.error('Prisma error in getCurrentUser:', prismaError)
+      // Prisma 에러 시 Supabase 데이터로 fallback
+    }
 
+    // Prisma 사용자가 없으면 Supabase 데이터 사용
     if (!user) {
-      return null
+      return {
+        id: authUser.id,
+        email: authUser.email!,
+        name: authUser.user_metadata?.name || 'User',
+        roleLevel: authUser.user_metadata?.roleLevel || 'STUDENT',
+        createdAt: new Date(authUser.created_at),
+        updatedAt: new Date(),
+      } as User
     }
 
     return user
