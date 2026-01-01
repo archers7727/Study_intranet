@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { prisma } from '@/lib/prisma'
 import { ApiResponse } from '@/types'
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 쿠키 저장용 배열
-    const cookiesToSet: { name: string; value: string; options: CookieOptions }[] = []
+    const cookiesToSet: { name: string; value: string; options: any }[] = []
 
     // Supabase 클라이언트 생성
     const supabase = createServerClient(
