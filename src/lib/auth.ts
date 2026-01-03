@@ -1,47 +1,35 @@
 import { cache } from 'react'
 import { RoleLevel } from '@/types'
 import { createSupabaseServerClient } from './supabase/server'
-import { prisma } from './prisma'
 import { User } from '@/types'
 
-// 서버사이드에서 현재 로그인한 사용자 가져오기 (캐시로 중복 호출 방지)
+// 서버사이드에서 현재 로그인한 사용자 가져오기
+// getSession()은 쿠키에서 JWT를 읽기만 함 (네트워크 호출 없음 = 매우 빠름)
 export const getCurrentUser = cache(async (): Promise<User | null> => {
   try {
     const supabase = await createSupabaseServerClient()
 
+    // getSession()은 로컬 쿠키에서 읽음 (네트워크 호출 없음)
     const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
 
-    if (authError || !authUser) {
+    if (sessionError || !session?.user) {
       return null
     }
 
-    // Prisma에서 사용자 정보 조회 시도
-    let user = null
-    try {
-      user = await prisma.user.findUnique({
-        where: { id: authUser.id },
-      })
-    } catch (prismaError) {
-      console.error('Prisma error in getCurrentUser:', prismaError)
-      // Prisma 에러 시 Supabase 데이터로 fallback
-    }
+    const authUser = session.user
 
-    // Prisma 사용자가 없으면 Supabase 데이터 사용
-    if (!user) {
-      return {
-        id: authUser.id,
-        email: authUser.email!,
-        name: authUser.user_metadata?.name || 'User',
-        roleLevel: authUser.user_metadata?.roleLevel || 'STUDENT',
-        createdAt: new Date(authUser.created_at),
-        updatedAt: new Date(),
-      } as User
-    }
-
-    return user
+    // JWT에서 사용자 정보 추출 (Prisma 호출 불필요)
+    return {
+      id: authUser.id,
+      email: authUser.email!,
+      name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+      roleLevel: (authUser.user_metadata?.roleLevel as RoleLevel) || 'STUDENT',
+      createdAt: new Date(authUser.created_at),
+      updatedAt: new Date(),
+    } as User
   } catch (error) {
     console.error('getCurrentUser error:', error)
     return null

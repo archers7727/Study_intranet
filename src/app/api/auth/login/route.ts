@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { prisma } from '@/lib/prisma'
 import { ApiResponse } from '@/types'
 
 export async function POST(request: NextRequest) {
@@ -55,39 +54,20 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Prisma에서 사용자 정보 조회 시도
-    let user = null
-    try {
-      user = await prisma.user.findUnique({
-        where: { id: authData.user.id },
-      })
-    } catch (prismaError: any) {
-      console.error('Prisma error:', prismaError)
-      // Prisma 에러가 발생해도 로그인은 계속 진행
-    }
+    // JWT의 user_metadata에서 사용자 정보 추출 (Prisma 호출 불필요 = 빠름)
+    const user = authData.user
 
-    // 성공 응답 생성 (Prisma 사용자 정보가 없어도 로그인 성공)
+    // 성공 응답 생성
     const response = NextResponse.json<ApiResponse>({
       success: true,
       data: {
-        user: user ? {
+        user: {
           id: user.id,
-          email: user.email,
-          name: user.name,
-          roleLevel: user.roleLevel,
-        } : {
-          id: authData.user.id,
-          email: authData.user.email!,
-          name: authData.user.user_metadata?.name || 'User',
-          roleLevel: authData.user.user_metadata?.roleLevel || 'STUDENT',
+          email: user.email!,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          roleLevel: user.user_metadata?.roleLevel || 'STUDENT',
         },
-        session: {
-          access_token: authData.session.access_token,
-          refresh_token: authData.session.refresh_token,
-          expires_in: authData.session.expires_in,
-          expires_at: authData.session.expires_at,
-          token_type: authData.session.token_type,
-        },
+        redirect: '/dashboard',
       },
     }, { status: 200 })
 
