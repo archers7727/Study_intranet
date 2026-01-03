@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { createSupabaseAdmin } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
 import { ApiResponse } from '@/types'
 
 export async function POST(request: NextRequest) {
@@ -54,18 +56,65 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // JWT의 user_metadata에서 사용자 정보 추출 (Prisma 호출 불필요 = 빠름)
-    const user = authData.user
+    const authUser = authData.user
+    let userName = authUser.user_metadata?.name
+    let userRoleLevel = authUser.user_metadata?.roleLevel
+    let needsSessionRefresh = false
+
+    // user_metadata에 roleLevel이 없으면 Prisma에서 가져와서 업데이트 (기존 사용자 마이그레이션)
+    if (!userRoleLevel) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: authUser.id },
+          select: { name: true, roleLevel: true }
+        })
+
+        if (dbUser) {
+          userName = dbUser.name
+          userRoleLevel = dbUser.roleLevel
+          needsSessionRefresh = true
+
+          // Supabase user_metadata 업데이트
+          const supabaseAdmin = createSupabaseAdmin()
+          await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
+            user_metadata: {
+              name: userName,
+              roleLevel: userRoleLevel,
+            }
+          })
+        }
+      } catch (prismaError) {
+        console.error('Prisma error during metadata sync:', prismaError)
+      }
+    }
+
+    // user_metadata가 업데이트되었으면 세션 갱신하여 새 JWT 획득
+    if (needsSessionRefresh) {
+      // 기존 쿠키 초기화
+      cookiesToSet.length = 0
+
+      // 세션 갱신 (새 JWT에 업데이트된 user_metadata 포함)
+      const { data: refreshData } = await supabase.auth.refreshSession()
+      if (refreshData.session) {
+        // 갱신된 세션의 user_metadata 사용
+        userName = refreshData.user?.user_metadata?.name || userName
+        userRoleLevel = refreshData.user?.user_metadata?.roleLevel || userRoleLevel
+      }
+    }
+
+    // 최종 사용자 정보
+    const finalName = userName || authUser.email?.split('@')[0] || 'User'
+    const finalRoleLevel = userRoleLevel || 'STUDENT'
 
     // 성공 응답 생성
     const response = NextResponse.json<ApiResponse>({
       success: true,
       data: {
         user: {
-          id: user.id,
-          email: user.email!,
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          roleLevel: user.user_metadata?.roleLevel || 'STUDENT',
+          id: authUser.id,
+          email: authUser.email!,
+          name: finalName,
+          roleLevel: finalRoleLevel,
         },
         redirect: '/dashboard',
       },
